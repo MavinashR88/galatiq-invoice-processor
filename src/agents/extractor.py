@@ -44,11 +44,11 @@ def extract(file_path: str) -> Invoice:
         )
         for i in data.get("items", [])
     ]
-
+    
     return Invoice(
-        invoice_id=data.get("invoice_id", "unknown"),
-        vendor=data.get("vendor", "unknown"),
-        amount=data.get("amount", 0.0),
+        invoice_id=data.get("invoice_id") or "unknown",
+        vendor=data.get("vendor") or "unknown",
+        amount=data.get("amount") or 0.0,
         due_date=data.get("due_date"),
         items=items,
         raw_text=raw_text,

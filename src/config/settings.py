@@ -7,8 +7,7 @@ class Settings(BaseSettings):
     approval_threshold: float = 10000.0
     log_level: str = "INFO"
 
-    class Config:
-        env_file = ".env"
+    model_config = {"env_file": ".env"}
 
 
 settings = Settings()
