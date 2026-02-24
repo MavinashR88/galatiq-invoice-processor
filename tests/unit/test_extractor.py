@@ -3,20 +3,28 @@ from unittest.mock import patch
 from src.agents.extractor import extract
 
 
+MOCK_TOOL_RESPONSE = {
+    "invoice_id": "INV-001",
+    "vendor": "Test Vendor",
+    "amount": 500.0,
+    "due_date": "2024-03-01",
+    "items": [
+        {"name": "WidgetA", "quantity": 5, "unit_price": 100.0}
+    ]
+}
+
+MOCK_EMPTY_RESPONSE = {
+    "invoice_id": None,
+    "vendor": None,
+    "amount": 0,
+    "due_date": None,
+    "items": []
+}
+
+
 def test_extract_valid_invoice():
-    mock_response = '''
-    {
-        "invoice_id": "INV-001",
-        "vendor": "Test Vendor",
-        "amount": 500.0,
-        "due_date": "2024-03-01",
-        "items": [
-            {"name": "WidgetA", "quantity": 5, "unit_price": 100.0}
-        ]
-    }
-    '''
     with patch("src.agents.extractor.read_file", return_value="raw invoice text"):
-        with patch("src.agents.extractor.chat", return_value=mock_response):
+        with patch("src.agents.extractor.extract_with_tools", return_value=MOCK_TOOL_RESPONSE):
             invoice = extract("fake/path.txt")
 
     assert invoice.invoice_id == "INV-001"
@@ -27,17 +35,8 @@ def test_extract_valid_invoice():
 
 
 def test_extract_missing_fields():
-    mock_response = '''
-    {
-        "invoice_id": null,
-        "vendor": null,
-        "amount": 0,
-        "due_date": null,
-        "items": []
-    }
-    '''
     with patch("src.agents.extractor.read_file", return_value="bad invoice text"):
-        with patch("src.agents.extractor.chat", return_value=mock_response):
+        with patch("src.agents.extractor.extract_with_tools", return_value=MOCK_EMPTY_RESPONSE):
             invoice = extract("fake/path.txt")
 
     assert invoice.invoice_id == "unknown"
@@ -46,6 +45,6 @@ def test_extract_missing_fields():
 
 def test_extract_invalid_json():
     with patch("src.agents.extractor.read_file", return_value="raw text"):
-        with patch("src.agents.extractor.chat", return_value="not json at all"):
+        with patch("src.agents.extractor.extract_with_tools", side_effect=Exception("Tool call failed")):
             with pytest.raises(Exception):
-                extract("fake/path.txt")    
+                extract("fake/path.txt")
