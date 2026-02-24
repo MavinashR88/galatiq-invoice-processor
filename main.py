@@ -9,12 +9,32 @@ log = get_logger(__name__)
 SUPPORTED_FORMATS = {".txt", ".pdf", ".json", ".csv", ".xml"}
 
 
+def print_result(result: dict):
+    print("\n" + "=" * 60)
+    print("  INVOICE PROCESSING REPORT")
+    print("=" * 60)
+    print(f"  Invoice ID : {result['invoice_id']}")
+    print(f"  Vendor     : {result['vendor']}")
+    print(f"  Amount     : ${result['amount']}")
+    print("-" * 60)
+    print(f"  VALIDATION : {'✅ PASSED' if result['validation']['passed'] else '❌ FAILED'}")
+    if result['validation']['issues']:
+        for issue in result['validation']['issues']:
+            print(f"    → {issue}")
+    print("-" * 60)
+    print(f"  APPROVAL   : {'✅ APPROVED' if result['approval']['approved'] else '❌ REJECTED'}")
+    print(f"    → {result['approval']['reasoning']}")
+    print("-" * 60)
+    print(f"  PAYMENT    : {'✅ SUCCESS' if result['payment']['success'] else '⏭️  SKIPPED'}")
+    print(f"    → {result['payment']['message']}")
+    if result['payment']['transaction_id']:
+        print(f"    → Transaction ID: {result['payment']['transaction_id']}")
+    print("=" * 60 + "\n")
+
+
 def process_single(invoice_path: str):
     result = run(invoice_path)
-    print("\n" + "=" * 50)
-    print("PIPELINE RESULT")
-    print("=" * 50)
-    print(json.dumps(result, indent=2))
+    print_result(result)
 
 
 def process_batch(invoice_dir: str):
@@ -32,6 +52,7 @@ def process_batch(invoice_dir: str):
     for file in sorted(files):
         try:
             result = run(str(file))
+            print_result(result)
             if result["payment"]["success"]:
                 results["approved"].append(result["invoice_id"])
             else:
@@ -40,10 +61,13 @@ def process_batch(invoice_dir: str):
             log.error(f"Failed to process {file.name}: {e}")
             results["errors"].append(file.name)
 
-    print("\n" + "=" * 50)
-    print("BATCH SUMMARY")
-    print("=" * 50)
-    print(json.dumps(results, indent=2))
+    print("=" * 60)
+    print("  BATCH SUMMARY")
+    print("=" * 60)
+    print(f"  ✅ Approved : {len(results['approved'])} invoices")
+    print(f"  ❌ Rejected : {len(results['rejected'])} invoices")
+    print(f"  ⚠️  Errors   : {len(results['errors'])} invoices")
+    print("=" * 60 + "\n")
 
 
 def main():

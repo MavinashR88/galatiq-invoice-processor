@@ -8,7 +8,7 @@ def make_invoice(items):
     return Invoice(
         invoice_id="TEST-001",
         vendor="Test Vendor",
-        amount=500.0,
+        amount=50.0,
         items=items,
     )
 
@@ -55,3 +55,15 @@ def test_invalid_amount():
     )
     result = validate(invoice)
     assert result.is_valid is False
+
+
+def test_amount_mismatch():
+    invoice = Invoice(
+        invoice_id="TEST-003",
+        vendor="Test Vendor",
+        amount=999.0,
+        items=[LineItem(name="WidgetA", quantity=5, unit_price=10.0)],
+    )
+    result = validate(invoice)
+    assert result.is_valid is False
+    assert any("mismatch" in issue for issue in result.issues)
